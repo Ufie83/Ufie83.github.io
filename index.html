@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>設備時間與 IP 資訊示範</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.78);
+        --panel-border: rgba(148, 163, 184, 0.25);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.12);
+        --ok: #22c55e;
+        --warn: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+        background:
+          radial-gradient(circle at top, rgba(56, 189, 248, 0.22), transparent 32%),
+          linear-gradient(135deg, #020617, #0f172a 48%, #1e293b);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .app {
+        width: min(960px, 100%);
+        display: grid;
+        gap: 20px;
+      }
+
+      .hero,
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 24px;
+        backdrop-filter: blur(18px);
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+      }
+
+      .hero {
+        padding: 28px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 0.95rem;
+        margin-bottom: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.4rem);
+      }
+
+      .subtitle {
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.7;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .card {
+        padding: 24px;
+      }
+
+      .card h2 {
+        margin-top: 0;
+        margin-bottom: 18px;
+        font-size: 1.2rem;
+      }
+
+      .time {
+        font-size: clamp(2.4rem, 7vw, 4.4rem);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        margin: 0;
+      }
+
+      .date {
+        font-size: 1.2rem;
+        margin-top: 10px;
+        color: #cbd5e1;
+      }
+
+      .timezone {
+        margin-top: 14px;
+        color: var(--muted);
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: minmax(90px, 120px) 1fr;
+        gap: 12px 14px;
+        margin: 0;
+      }
+
+      dt {
+        color: var(--muted);
+      }
+
+      dd {
+        margin: 0;
+        font-weight: 600;
+        word-break: break-word;
+      }
+
+      .status {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        color: var(--muted);
+      }
+
+      .status.loading::before,
+      .status.success::before,
+      .status.error::before {
+        display: inline-block;
+        margin-right: 8px;
+      }
+
+      .status.loading::before {
+        content: "⏳";
+      }
+
+      .status.success {
+        color: #bbf7d0;
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+
+      .status.success::before {
+        content: "✅";
+      }
+
+      .status.error {
+        color: #fde68a;
+        border-color: rgba(245, 158, 11, 0.35);
+      }
+
+      .status.error::before {
+        content: "⚠️";
+      }
+
+      .hint {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .country-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        margin-top: 14px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.12);
+      }
+
+      .flag {
+        font-size: 1.4rem;
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 16px;
+        }
+
+        .hero,
+        .card {
+          border-radius: 20px;
+        }
+
+        dl {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero">
+        <div class="eyebrow">示範網頁</div>
+        <h1>設備時間、日期與 IP 資訊</h1>
+        <p class="subtitle">
+          此頁面會即時顯示目前設備的本地時間與日期，並透過公開 IP API 取得 IP、所在國家/國籍、地區與城市資訊。
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>設備時間</h2>
+          <p class="time" id="currentTime">--:--:--</p>
+          <p class="date" id="currentDate">讀取中...</p>
+          <p class="timezone" id="timezone">時區：讀取中...</p>
+        </article>
+
+        <article class="card">
+          <h2>IP 與國籍資訊</h2>
+          <dl>
+            <dt>IP 位址</dt>
+            <dd id="ipAddress">讀取中...</dd>
+
+            <dt>國家</dt>
+            <dd id="country">讀取中...</dd>
+
+            <dt>國籍</dt>
+            <dd id="nationality">讀取中...</dd>
+
+            <dt>地區</dt>
+            <dd id="region">讀取中...</dd>
+
+            <dt>城市</dt>
+            <dd id="city">讀取中...</dd>
+          </dl>
+          <div class="country-badge" id="countryBadge" hidden>
+            <span class="flag" id="countryFlag">🌐</span>
+            <span id="countryLabel">定位中</span>
+          </div>
+          <div class="status loading" id="status">正在查詢 IP 與國家資訊...</div>
+          <p class="hint">
+            備註：IP 地理位置為網路推估結果，可能與實際所在地或裝置國籍不同；若 API 無法連線，頁面會顯示提示訊息。
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const timeNode = document.getElementById('currentTime');
+      const dateNode = document.getElementById('currentDate');
+      const timezoneNode = document.getElementById('timezone');
+
+      const ipAddressNode = document.getElementById('ipAddress');
+      const countryNode = document.getElementById('country');
+      const nationalityNode = document.getElementById('nationality');
+      const regionNode = document.getElementById('region');
+      const cityNode = document.getElementById('city');
+      const statusNode = document.getElementById('status');
+      const countryBadgeNode = document.getElementById('countryBadge');
+      const countryFlagNode = document.getElementById('countryFlag');
+      const countryLabelNode = document.getElementById('countryLabel');
+
+      function updateClock() {
+        const now = new Date();
+        timeNode.textContent = new Intl.DateTimeFormat('zh-TW', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }).format(now);
+
+        dateNode.textContent = new Intl.DateTimeFormat('zh-TW', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long',
+        }).format(now);
+
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        timezoneNode.textContent = `時區：${tz}`;
+      }
+
+      function setStatus(type, message) {
+        statusNode.className = `status ${type}`;
+        statusNode.textContent = message;
+      }
+
+      function toNationality(countryName) {
+        const mapping = {
+          Taiwan: '台灣',
+          Japan: '日本',
+          'United States': '美國',
+          Canada: '加拿大',
+          Korea: '韓國',
+          'South Korea': '韓國',
+          Singapore: '新加坡',
+          Thailand: '泰國',
+          Vietnam: '越南',
+          Philippines: '菲律賓',
+          Malaysia: '馬來西亞',
+          Indonesia: '印尼',
+          China: '中國',
+          'Hong Kong': '香港',
+          Macau: '澳門',
+          France: '法國',
+          Germany: '德國',
+          'United Kingdom': '英國',
+          Australia: '澳洲',
+          India: '印度',
+          Brazil: '巴西',
+          Mexico: '墨西哥',
+        };
+
+        if (mapping[countryName]) {
+          return `${mapping[countryName]}籍`;
+        }
+
+        return `${countryName}籍`;
+      }
+
+      async function fetchIpInfo() {
+        try {
+          setStatus('loading', '正在查詢 IP 與國家資訊...');
+          const response = await fetch('https://ipwho.is/');
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!data.success) {
+            throw new Error(data.message || 'IP API 回傳失敗');
+          }
+
+          ipAddressNode.textContent = data.ip || '未知';
+          countryNode.textContent = data.country || '未知';
+          nationalityNode.textContent = data.country ? toNationality(data.country) : '未知';
+          regionNode.textContent = data.region || '未知';
+          cityNode.textContent = data.city || '未知';
+
+          if (data.country || data.flag?.emoji) {
+            countryBadgeNode.hidden = false;
+            countryFlagNode.textContent = data.flag?.emoji || '🌐';
+            countryLabelNode.textContent = `${data.country || '未知國家'}${data.country_code ? ` (${data.country_code})` : ''}`;
+          }
+
+          setStatus('success', 'IP 與地理位置資訊已更新。');
+        } catch (error) {
+          ipAddressNode.textContent = '無法取得';
+          countryNode.textContent = '無法取得';
+          nationalityNode.textContent = '無法取得';
+          regionNode.textContent = '無法取得';
+          cityNode.textContent = '無法取得';
+          countryBadgeNode.hidden = true;
+          setStatus('error', `IP API 連線失敗：${error.message}`);
+        }
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+      fetchIpInfo();
+    </script>
+  </body>
+</html>
